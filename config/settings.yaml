@@ -1,0 +1,16 @@
+{
+    "python.analysis.extraPaths":  [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/core",
+        "${workspaceFolder}/src/utils"
+    ],
+    # "python.defaultInterpreterPath":  "venv/Scripts/python.exe",   // 根据实际虚拟环境路径调整 
+    "python.linting.enabled":  true,
+    "python.linting.pylintEnabled":  true,
+    "python.formatting.provider":  "black",
+    "editor.formatOnSave":  true,
+    "files.exclude":  {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true 
+    }
+}
