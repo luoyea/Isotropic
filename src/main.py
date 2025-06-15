@@ -48,14 +48,14 @@ def process_mesh(mesh, params):
         cvt_params = params["cvt"].copy()
         mesh = cvt_optimization(
             mesh,
-            beta_min=cvt_params.pop("beta_min",  30.0),
-            beta_max=cvt_params.pop("beta_max",  90.0),
+            beta_min=cvt_params.pop("beta_min",  35.0),
+            beta_max=cvt_params.pop("beta_max",  86.0),
             **cvt_params 
         )
     
     return mesh 
  
-def analyze_angles(mesh, beta_min=30.0, beta_max=90.0):
+def analyze_angles(mesh, beta_min=35.0, beta_max=86.0):
     """统计三角形角度分布"""
     triangles = mesh.triangles  
     angles = []
@@ -109,8 +109,8 @@ def main():
     convex_hull = compute_convex_hull(processed_mesh.vertices)  
     save_mesh(convex_hull, os.path.join(args.output_dir,   f"{base_name}_convex_hull.obj"))  
 
-    beta_min = get_cvt_params().get("beta_min", 30.0)
-    beta_max = get_cvt_params().get("beta_max", 90.0)
+    beta_min = get_cvt_params().get("beta_min", 35.0)
+    beta_max = get_cvt_params().get("beta_max", 86.0)
     
     over_max_percent, under_min_percent = analyze_angles(processed_mesh, beta_min=beta_min, beta_max=beta_max)
     
