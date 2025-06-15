@@ -39,8 +39,8 @@ DEFAULT_PARAMS = {
             "num_samples": 900000,
             "max_iterations": 20,
             "tolerance": 1e-6,
-            "beta_min": 30.0,  
-            "beta_max": 90.0  
+            "beta_min": 35.0,  
+            "beta_max": 86.0  
         },
         "general": {
             "output_dir": "output/",
