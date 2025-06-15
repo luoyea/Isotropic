@@ -42,7 +42,6 @@ def flip_edge(mesh, edge):
         [v_opposite_1, edge[0], v_opposite_2],
         [v_opposite_1, v_opposite_2, edge[1]]
     ]
-
     mesh.faces[face_indices[0]] = new_faces[0]
     mesh.faces[face_indices[1]] = new_faces[1]
     return True
@@ -70,16 +69,13 @@ def topology_adjustment(mesh, beta_min=30.0, beta_max=120.0, target_valence=6, m
             all_vertices = list(set(face1.tolist() + face2.tolist()))
             if len(all_vertices) != 4:
                 continue
-
-            # 当前角度与valence误差
             angles_before = []
             for fid in [face1, face2]:
                 angles_before.extend(compute_triangle_angles(mesh.vertices, fid))
             worst_before = min(angles_before) < beta_min or max(angles_before) > beta_max
 
             valence_before = valence_error(valence[all_vertices], target_valence).sum()
-
-            # 尝试翻边
+            
             if not flip_edge(mesh, edge):
                 continue
 
@@ -89,42 +85,32 @@ def topology_adjustment(mesh, beta_min=30.0, beta_max=120.0, target_valence=6, m
             for fid in [face1_new, face2_new]:
                 angles_after.extend(compute_triangle_angles(mesh.vertices, fid))
             worst_after = min(angles_after) < beta_min or max(angles_after) > beta_max
-
             valence_new = compute_valence(mesh)
             valence_after = valence_error(valence_new[all_vertices], target_valence).sum()
 
-            # 判断是否保留翻边
             if (worst_after and not worst_before) or (valence_after >= valence_before):
                 flip_edge(mesh, edge)
             else:
                 changed = True
-
         if not changed:
             break
-
     return mesh
  
 def laplacian_smoothing(mesh, iterations=10, lambda_=0.5):
-    """基于拉普拉斯平滑优化顶点位置."""
+    """基于拉普拉斯平滑优化顶点位置"""
     vertices = mesh.vertices.copy() 
     faces = mesh.faces  
-    
     for _ in range(iterations):
-        # 计算每个顶点的邻居平均位置 
         neighbors = [[] for _ in range(len(vertices))]
         for face in faces:
             for i in range(3):
                 v = face[i]
                 neighbors[v].extend([face[(i+1)%3], face[(i-1)%3]])
-        
-        # 去重并计算平滑位置 
         for v in range(len(vertices)):
             if len(neighbors[v]) == 0:
                 continue 
             avg = np.mean(vertices[neighbors[v]],  axis=0)
             vertices[v] = vertices[v] * (1 - lambda_) + avg * lambda_
-    
-    # 生成平滑后的网格 
     smoothed_mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
     return smoothed_mesh 
  
@@ -133,7 +119,6 @@ def taubin_smoothing(mesh, iterations=10, lambda_=0.5, mu=-0.53):
     """Taubin平滑算法"""
     vertices = mesh.vertices.copy()
     faces = mesh.faces
-    
     for _ in range(iterations):
         # 正向平滑
         neighbors = [[] for _ in range(len(vertices))]
@@ -141,13 +126,11 @@ def taubin_smoothing(mesh, iterations=10, lambda_=0.5, mu=-0.53):
             for i in range(3):
                 v = face[i]
                 neighbors[v].extend([face[(i+1)%3], face[(i-1)%3]])
-        
         for v in range(len(vertices)):
             if len(neighbors[v]) == 0:
                 continue 
             avg = np.mean(vertices[neighbors[v]], axis=0)
             vertices[v] += lambda_ * (avg - vertices[v])
-        
         # 反向..
         for v in range(len(vertices)):
             if len(neighbors[v]) == 0:
@@ -158,14 +141,14 @@ def taubin_smoothing(mesh, iterations=10, lambda_=0.5, mu=-0.53):
     return trimesh.Trimesh(vertices=vertices, faces=faces)
 
 def valence_optimization(input_path, output_path, method="smoothing", target_valence=6, smooth_type="laplacian"):
-    """main：执行顶点度数优化"""
+    """执行顶点度数优化"""
     if mesh is None:
         mesh = trimesh.load(input_path)
     
     if method == "smoothing":
         if smooth_type == "taubin":
             optimized = taubin_smoothing(mesh)
-        else:  # 默认使用拉普拉斯
+        else: 
             optimized = laplacian_smoothing(mesh)
     elif method == "topology":
         optimized = topology_adjustment(mesh, target_valence=target_valence)
