@@ -66,7 +66,7 @@ def cvt_optimization(mesh, iterations=5):
     return optimized_mesh
 
 
-def nob_optimization(mesh, beta_min=30.0, beta_max=90.0):
+def nob_optimization(mesh, beta_min=35.0, beta_max=86.0):
     """NOB"""
     optimized = remesh.barycentric(mesh,  count=len(mesh.vertices)) 
     angles = compute_triangle_angles(optimized)
@@ -83,7 +83,7 @@ def nob_optimization(mesh, beta_min=30.0, beta_max=90.0):
     
     return optimized 
  
-def angle_optimization(input_path, output_path, method="cvt", beta_min=30.0, beta_max=90.0):
+def angle_optimization(input_path, output_path, method="cvt", beta_min=35.0, beta_max=86.0):
     mesh = trimesh.load(input_path) 
     
     if method == "cvt":
@@ -104,4 +104,4 @@ if __name__ == "__main__":
     angle_optimization(input_path, output_path_cvt, method="cvt", beta_min=35.0, beta_max=86.0)
     
     # NOB 优化 
-    angle_optimization(input_path, output_path_nob, method="nob", beta_min=30.0, beta_max=90.0)
+    angle_optimization(input_path, output_path_nob, method="nob", beta_min=35.0, beta_max=86.0)
