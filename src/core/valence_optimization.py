@@ -49,7 +49,7 @@ def flip_edge(mesh, edge):
 def valence_error(valence, target=6):
     return np.abs(valence - target)
 
-def topology_adjustment(mesh, beta_min=30.0, beta_max=120.0, target_valence=6, max_iterations=10):
+def topology_adjustment(mesh, beta_min=35.0, beta_max=86.0, target_valence=6, max_iterations=10):
     """
     拓扑优化
     """
