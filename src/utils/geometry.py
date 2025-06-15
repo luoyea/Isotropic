@@ -8,20 +8,17 @@ from mpl_toolkits.mplot3d  import Axes3D
 
 '''
 def compute_point_to_plane_distance(point, plane_point, plane_normal):
-    
     plane_normal = plane_normal / np.linalg.norm(plane_normal) 
     return np.dot(point  - plane_point, plane_normal)
  
 def compute_face_normals(vertices, faces):
-    
-    # 计算面的边向量 
+
     v0 = vertices[faces[:, 0]]
     v1 = vertices[faces[:, 1]]
     v2 = vertices[faces[:, 2]]
     edge1 = v1 - v0 
     edge2 = v2 - v0 
-    
-    # 计算法线并归一化 
+
     face_normals = np.cross(edge1,  edge2)
     face_normals /= np.linalg.norm(face_normals,  axis=1, keepdims=True)
     return face_normals 
@@ -62,7 +59,6 @@ def compute_mesh_centroid(mesh):
 def generate_grid_points(bounds, resolution=0.1):
     """
     生成均匀分布的网格点
-
     """
     x = np.arange(bounds[0][0],  bounds[1][0], resolution)
     y = np.arange(bounds[0][1],  bounds[1][1], resolution)
@@ -72,14 +68,14 @@ def generate_grid_points(bounds, resolution=0.1):
  
 def compute_closest_point(mesh, query_point):
     """
-    计算查询点到网格的最近点。
+    计算查询点到网格的最近点
     """
     _, closest_point = mesh.nearest.on_surface(query_point) 
     return closest_point 
  
 def compute_convex_hull(points):
     """
-    计算点集的凸包。
+    计算点集的凸包
 
     """
     hull = trimesh.convex.convex_hull(points) 
@@ -95,7 +91,6 @@ def visualize_bounding_box(ax, mesh, color="red", alpha=0.2):
         [[max_bound[0], min_bound[1], min_bound[2]], max_bound],
         [max_bound, [min_bound[0], max_bound[1], max_bound[2]]],
         [[min_bound[0], max_bound[1], max_bound[2]], min_bound],
-        # 其他边...
     ])
     for edge in edges:
         ax.plot(*edge.T,  color=color, alpha=alpha)
@@ -103,11 +98,10 @@ def visualize_bounding_box(ax, mesh, color="red", alpha=0.2):
 if __name__ == "__main__":
 
     mesh = trimesh.load("output/optimized_cvt.obj") 
-    # 计算面法线 
     face_normals = compute_face_normals(mesh.vertices,  mesh.faces) 
-    # 质心计算 
+
     centroid = compute_mesh_centroid(mesh)
-    # 生成凸包 
+
     convex_hull = compute_convex_hull(mesh.vertices) 
     fig = plt.figure() 
     ax = fig.add_subplot(111,  projection='3d')
