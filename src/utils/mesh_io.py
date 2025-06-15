@@ -28,9 +28,9 @@ def save_mesh(mesh, output_path, file_type=None, **kwargs):
 def export_mesh_info(mesh, output_dir, prefix="mesh_info"):
     boundary_edges = []
     for edge_idx in range(len(mesh.edges)):
-        # 获取与边相关联的面数
+
         face_count = len(np.where(mesh.face_adjacency_edges == edge_idx)[0])
-        if face_count == 1:  # 边界边只属于一个面
+        if face_count == 1:
             boundary_edges.append(mesh.edges[edge_idx])
     
     info = {
@@ -47,7 +47,6 @@ def export_mesh_info(mesh, output_dir, prefix="mesh_info"):
         }
     }
     
-    # 保存为文本文件 
     output_path = os.path.join(output_dir,  f"{prefix}_info.txt") 
     with open(output_path, "w") as f:
         for key, value in info.items(): 
