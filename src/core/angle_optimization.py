@@ -6,18 +6,15 @@ from scipy.spatial  import Delaunay
 角度优化：基于质心沃罗诺伊镶嵌（CVT）和非钝角重网格化（NOB）
 '''
 def compute_triangle_angles(mesh):
-    """计算网格中每个三角形的三个角度（单位：度）."""
+    """计算网格中每个三角形的三个角度"""
     angles = []
     for face in mesh.faces:
         v0, v1, v2 = mesh.vertices[face]
-        
-        # 添加数值稳定性检查
         epsilon = 1e-8
         a = v1 - v0
         b = v2 - v0
         c = v2 - v1
-        
-        # 计算角度（添加安全除法）
+
         dot_bc = np.dot(b, c)
         norm_b = np.linalg.norm(b) + epsilon
         norm_c = np.linalg.norm(c) + epsilon
@@ -28,9 +25,7 @@ def compute_triangle_angles(mesh):
         norm_a = np.linalg.norm(a) + epsilon
         cos_b = np.clip(dot_ac / (norm_a * norm_c), -1.0, 1.0)
         angle_b = np.degrees(np.arccos(cos_b))
-
         angle_c = 180 - angle_a - angle_b
-        
         angles.append([angle_a, angle_b, angle_c])
     return np.array(angles) 
  
@@ -89,7 +84,6 @@ def nob_optimization(mesh, beta_min=30.0, beta_max=90.0):
     return optimized 
  
 def angle_optimization(input_path, output_path, method="cvt", beta_min=30.0, beta_max=90.0):
-    """主函数""" 
     mesh = trimesh.load(input_path) 
     
     if method == "cvt":
