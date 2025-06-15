@@ -8,31 +8,26 @@ from trimesh import remesh
     3. 重复迭代，直到达到收敛条件或达到最大迭代次数。
 '''
 def laplacian_smoothing(mesh, iterations=10, lambda_=0.5):
-    """基于拉普拉斯平滑，通过邻居平均位置更新顶点."""
     vertices = mesh.vertices.copy() 
     faces = mesh.faces  
-    
     for _ in range(iterations):
-        # 计算每个顶点的邻居 
         neighbors = [[] for _ in range(len(vertices))]
         for face in faces:
             for i in range(3):
                 v = face[i]
                 neighbors[v].extend([face[(i+1)%3], face[(i-1)%3]])
         
-        # 去重并计算平滑位置 
+        # 计算平滑位置 
         for v in range(len(vertices)):
             if len(neighbors[v]) == 0:
                 continue 
             avg = np.mean(vertices[neighbors[v]],  axis=0)
             vertices[v] = vertices[v] * (1 - lambda_) + avg * lambda_
-    
-    # 生成平滑后的网格 
     smoothed_mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
     return smoothed_mesh 
  
 def tanh_smoothing(mesh, iterations=10, lambda_=0.5, epsilon=1e-3):
-    """双曲正切平滑，避免边界过度收缩."""
+    """双曲正切平滑"""
     vertices = mesh.vertices.copy() 
     faces = mesh.faces  
     
@@ -55,7 +50,7 @@ def tanh_smoothing(mesh, iterations=10, lambda_=0.5, epsilon=1e-3):
     return smoothed_mesh 
  
 def taubin_smoothing(mesh, iterations=10, lambda_=0.5, mu=0.5):
-    """TAubin 平滑（正向+逆向拉普拉斯）."""
+    """TAubin 平滑"""
     vertices = mesh.vertices.copy() 
     faces = mesh.faces  
     
@@ -66,28 +61,25 @@ def taubin_smoothing(mesh, iterations=10, lambda_=0.5, mu=0.5):
             for i in range(3):
                 v = face[i]
                 neighbors[v].extend([face[(i+1)%3], face[(i-1)%3]])
-        
         for v in range(len(vertices)):
             if len(neighbors[v]) == 0:
                 continue 
             avg = np.mean(vertices[neighbors[v]],  axis=0)
             vertices[v] = vertices[v] * (1 - lambda_) + avg * lambda_
         
-        # 逆向拉普拉斯平滑（使用更新后的顶点）
+        # 逆向拉普拉斯平滑
         for v in range(len(vertices)):
             if len(neighbors[v]) == 0:
                 continue 
             avg = np.mean(vertices[neighbors[v]],  axis=0)
             vertices[v] = vertices[v] * (1 + mu) - avg * mu 
-    
     smoothed_mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
     return smoothed_mesh 
  
 def adaptive_smoothing(mesh, iterations=10, lambda_=0.5, curvature_threshold=0.1):
-    """自适应平滑：根据曲率调整平滑强度."""
+    """自适应平滑"""
     vertices = mesh.vertices.copy() 
     faces = mesh.faces  
-    # 计算顶点曲率
     vertex_normals = mesh.vertex_normals  
     curvature = np.linalg.norm(vertex_normals,  axis=1)
     curvature = curvature / np.max(curvature)
@@ -103,7 +95,6 @@ def adaptive_smoothing(mesh, iterations=10, lambda_=0.5, curvature_threshold=0.1
             if len(neighbors[v]) == 0:
                 continue 
             avg = np.mean(vertices[neighbors[v]],  axis=0)
-            # 根据曲率调整 lambda 
             adjusted_lambda = lambda_ * (1 - curvature[v]) if curvature[v] > curvature_threshold else lambda_
             vertices[v] = vertices[v] * (1 - adjusted_lambda) + avg * adjusted_lambda 
     
@@ -111,7 +102,7 @@ def adaptive_smoothing(mesh, iterations=10, lambda_=0.5, curvature_threshold=0.1
     return smoothed_mesh 
  
 def smoothing(mesh, method="laplacian", **kwargs):  
-    """主函数：执行网格平滑."""
+    """执行网格平滑"""
     if method == "laplacian":
         smoothed = laplacian_smoothing(mesh, **kwargs)
     elif method == "tanh":
