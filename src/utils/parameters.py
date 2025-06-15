@@ -66,17 +66,17 @@ def get_smoothing_params(method="laplacian"):
     return load_params()["smoothing"][method]
  
 def get_topology_params():
-    """获取拓扑优化参数."""
+    """拓扑优化参数"""
     params = load_params()["topology"].copy()
     params.pop("method", None)
     return params
 
 def get_cvt_params():
-    """获取CVT优化参数."""
+    """CVT优化参数"""
     return load_params()["cvt"].copy()
  
 def get_general_params():
-    """获取通用参数."""
+    """通用参数"""
     return load_params()["general"]
  
 if __name__ == "__main__":
@@ -100,6 +100,5 @@ if __name__ == "__main__":
     }
     with open("config.json",  "w") as f:
         json.dump(custom_params,  f)
-    
     params = load_params("config.json") 
     print(f"自定义 TAubin 平滑 lambda: {params['smoothing']['taubin']['lambda_']}")
