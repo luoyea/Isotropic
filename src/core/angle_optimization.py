@@ -34,73 +34,50 @@ def compute_triangle_angles(mesh):
         angles.append([angle_a, angle_b, angle_c])
     return np.array(angles) 
  
-def cvt_optimization(mesh, num_samples=1000, beta_min=35.0, beta_max=86.0, max_iterations=10, tolerance=1e-4):
-    """改进后的CVT优化（带角度约束）"""
+def is_boundary_vertex(mesh, vertex_index):
+    return mesh.vertex_neighbors[vertex_index].__len__() != mesh.vertex_faces[vertex_index].__len__()
+
+def compute_weighted_centroid(vertices, face):
+    a, b, c = vertices[face]
+    centroid = (a + b + c) / 3.0
+    area = 0.5 * np.linalg.norm(np.cross(b - a, c - a))
+    return centroid, area
+
+def cvt_optimization(mesh, iterations=5):
+    """CVT 优化"""
     vertices = mesh.vertices.copy()
-    faces = mesh.faces.copy()
-    # 保留原始顶点数
-    original_vertex_count = len(mesh.vertices)
-    
-    for _ in range(max_iterations):
-        voronoi_centers = []
+    faces = mesh.faces
+    is_boundary = np.array([is_boundary_vertex(mesh, i) for i in range(len(vertices))])
+
+    for _ in range(iterations):
+        new_vertices = np.zeros_like(vertices)
+        weight_sum = np.zeros((len(vertices), 1))
+
+        for face in faces:
+            centroid, area = compute_weighted_centroid(vertices, face)
+            for idx in face:
+                new_vertices[idx] += centroid * area
+                weight_sum[idx] += area
+
+        # 更新非边界顶点位置
         for i in range(len(vertices)):
-            connected_faces = np.where(np.any(faces == i, axis=1))[0]
-            if len(connected_faces) == 0:
-                voronoi_centers.append(vertices[i])
-                continue
+            if not is_boundary[i] and weight_sum[i] > 1e-6:
+                vertices[i] = new_vertices[i] / weight_sum[i]
 
-            region_vertices = vertices[faces[connected_faces].flatten()]
-            center = np.mean(region_vertices, axis=0)
-            voronoi_centers.append(center)
+        # 更新 mesh 用于下次迭代邻接信息
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
 
-        vertices = np.array(voronoi_centers)
-
-        try:
-            delaunay = Delaunay(vertices)
-            faces = delaunay.simplices
-        except:
-            break
-
-        # 角度约束处理
-        new_mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-        angles = compute_triangle_angles(new_mesh)
-        
-        # 过滤不符合角度约束的面
-        valid_faces = []
-        for idx, face_angles in enumerate(angles):
-            if idx >= len(faces):
-                continue  # 防止索引越界
-            if np.all(face_angles > beta_min) and np.all(face_angles < beta_max):
-                valid_faces.append(faces[idx])  # 直接使用当前索引
-        
-        # 更新拓扑结构
-        if len(valid_faces) > 0:
-            faces = np.array(valid_faces)
-            print(f"迭代 {_}: 有效面数 {len(faces)}，角度达标率 {len(valid_faces)/len(angles)*100:.1f}%")
-        else:
-            print("警告：未找到符合角度约束的面，终止迭代")
-            break
-
-    # 保持顶点数量稳定
-    if len(vertices) != original_vertex_count:
-        vertices = vertices[:original_vertex_count]
-    
-    return trimesh.Trimesh(vertices=vertices, faces=faces)
+    optimized_mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    return optimized_mesh
 
 
 def nob_optimization(mesh, beta_min=30.0, beta_max=90.0):
-    """非钝角重网格化（NOB），消除钝角和小角."""
-    # 使用remesh 库进行初步优化 
+    """NOB"""
     optimized = remesh.barycentric(mesh,  count=len(mesh.vertices)) 
-    
-    # 迭代消除钝角（>90°）
     angles = compute_triangle_angles(optimized)
     while np.any(angles  > beta_max):
-        # 找到第一个钝角三角形 
         idx = np.where(angles  > beta_max)[0][0]
         face = optimized.faces[idx] 
-        
-        # 对钝角边进行分裂
         edge = optimized.edges_unique[idx] 
         new_vertex = np.mean(optimized.vertices[edge],  axis=0)
         optimized.vertices  = np.vstack([optimized.vertices,  new_vertex])
@@ -112,7 +89,7 @@ def nob_optimization(mesh, beta_min=30.0, beta_max=90.0):
     return optimized 
  
 def angle_optimization(input_path, output_path, method="cvt", beta_min=30.0, beta_max=90.0):
-    """主函数：执行角度优化.""" 
+    """主函数""" 
     mesh = trimesh.load(input_path) 
     
     if method == "cvt":
@@ -121,8 +98,6 @@ def angle_optimization(input_path, output_path, method="cvt", beta_min=30.0, bet
         optimized = nob_optimization(mesh, beta_min=beta_min, beta_max=beta_max)
     else:
         raise ValueError("Unsupported method. Choose 'cvt' or 'nob'.")
-    
-    # 保存优化后的网格 
     optimized.export(output_path) 
     print(f"角度优化完成，顶点数：{len(optimized.vertices)} ，角度范围：{beta_min}-{beta_max}°")
  
