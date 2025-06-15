@@ -1,7 +1,7 @@
 import sys 
 from pathlib import Path 
-sys.path.append(str(Path(__file__).parent.parent))    # 项目根目录 
-sys.path.append(str(Path(__file__).parent))           # src 目录 
+sys.path.append(str(Path(__file__).parent.parent))  
+sys.path.append(str(Path(__file__).parent))         
 import os 
 import argparse 
 from utils import parameters 
@@ -29,10 +29,9 @@ def parse_args():
     return parser.parse_args() 
  
 def process_mesh(mesh, params):
-    """执行网格处理流程."""
+    """网格处理流程"""
     # 平滑处理 
     if params["smoothing"]:
-        # 从参数字典中获取方法并移除，避免重复传递 
         smoothing_params = params["smoothing"].copy()
         method = smoothing_params.pop("method")
         print(f"执行 {method} 平滑...")
@@ -47,7 +46,6 @@ def process_mesh(mesh, params):
     if params["cvt"]:
         print("执行 CVT 优化...")
         cvt_params = params["cvt"].copy()
-        # 添加角度约束参数传递 
         mesh = cvt_optimization(
             mesh,
             beta_min=cvt_params.pop("beta_min",  30.0),
@@ -91,10 +89,9 @@ def main():
             uniform=True 
         )
     else:
-        # 原有加载逻辑 
         mesh = load_mesh(args.input) 
     
-    # 处理流程 
+    # 处理 
     processed_params = {
         "smoothing": get_smoothing_params(args.smoothing)  if args.smoothing  else None,
         "topology": get_topology_params() if args.topology  else None,  
@@ -107,15 +104,11 @@ def main():
     output_path = os.path.join(args.output_dir,   f"{base_name}_processed.obj")  
     save_mesh(processed_mesh, output_path)
     print(f"处理后的网格已保存至：{output_path}")
-    
-    # 导出信息 
     export_mesh_info(processed_mesh, args.output_dir,   prefix=base_name)
-    
-    # 可选：计算凸包并保存 
+
     convex_hull = compute_convex_hull(processed_mesh.vertices)  
     save_mesh(convex_hull, os.path.join(args.output_dir,   f"{base_name}_convex_hull.obj"))  
-    
-    # 质量分析
+
     beta_min = get_cvt_params().get("beta_min", 30.0)
     beta_max = get_cvt_params().get("beta_max", 90.0)
     
