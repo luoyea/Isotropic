@@ -39,12 +39,24 @@ DEFAULT_PARAMS = {
             "num_samples": 900000,
             "max_iterations": 20,
             "tolerance": 1e-6,
-            "beta_min": 35.0,  
-            "beta_max": 86.0  
+            "beta_min": 30.0,  
+            "beta_max": 90.0  
+        },
+        "nob": {
+            "num_samples": 1000,
+            "max_iterations": 10,
+            "tolerance": 1e-6,
+            "beta_min": 30.0,  
+            "beta_max": 90.0  
         },
         "general": {
             "output_dir": "output/",
             "verbose": True 
+        },
+        "isotropic": {
+            "beta_min": 35.0,
+            "beta_max": 86.0,
+            "max_iter": 5
         }
     
 }
@@ -66,19 +78,27 @@ def get_smoothing_params(method="laplacian"):
     return load_params()["smoothing"][method]
  
 def get_topology_params():
-    """拓扑优化参数"""
+    """获取拓扑优化参数."""
     params = load_params()["topology"].copy()
     params.pop("method", None)
     return params
 
 def get_cvt_params():
-    """CVT优化参数"""
+    """获取CVT优化参数."""
     return load_params()["cvt"].copy()
+
+def get_isotropic_params():
+    """获取 isotropic 优化参数."""
+    return load_params()["isotropic"].copy()
  
 def get_general_params():
-    """通用参数"""
+    """获取通用参数."""
     return load_params()["general"]
  
+def get_nob_params():
+    """获取NOB优化参数"""
+    return load_params()["nob"].copy()
+
 if __name__ == "__main__":
     params = load_params()
     # 拉普拉斯平滑参数 
@@ -100,5 +120,6 @@ if __name__ == "__main__":
     }
     with open("config.json",  "w") as f:
         json.dump(custom_params,  f)
+    
     params = load_params("config.json") 
     print(f"自定义 TAubin 平滑 lambda: {params['smoothing']['taubin']['lambda_']}")
