@@ -1,7 +1,6 @@
 import trimesh
 import numpy as np
 
-# 判断一个三角形的最大角和最小角
 def triangle_angles(vertices, face):
     a, b, c = vertices[face[0]], vertices[face[1]], vertices[face[2]]
     ab, bc, ca = b - a, c - b, a - c
@@ -16,7 +15,7 @@ def angle_between(v1, v2):
     cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
     return np.arccos(np.clip(cos_theta, -1.0, 1.0)) * 180 / np.pi
 
-# 插入一个点到给定边的中点（返回更新后的网格）
+# 插入
 def split_edge(mesh, edge):
     vertices = mesh.vertices.tolist()
     faces = mesh.faces.tolist()
@@ -37,7 +36,7 @@ def split_edge(mesh, edge):
     faces.extend(new_faces)
     return trimesh.Trimesh(vertices=np.array(vertices), faces=np.array(faces), process=False)
 
-# 折叠边，删除一条边上的一个点并合并到另一个点
+# 折叠边
 def collapse_edge(mesh, edge):
     v1, v2 = edge
     vertices = mesh.vertices.copy()
@@ -49,7 +48,7 @@ def collapse_edge(mesh, edge):
     for face in faces:
         if v2 in face:
             if v1 in face:
-                continue  # 删除重复点的面
+                continue
             else:
                 face = [v1 if idx == v2 else idx for idx in face]
         updated_faces.append(face)
@@ -83,7 +82,6 @@ def find_shortest_edge(mesh, face):
     else:
         return (face[2], face[0])
 
-# 主流程函数：角度优化操作
 def isotropic(mesh, beta_min=35.0, beta_max=86.0, max_iter=5):
     for _ in range(max_iter):
         faces_to_split = []
