@@ -2,6 +2,8 @@ import numpy as np
 import trimesh 
 from trimesh import remesh 
 from scipy.spatial  import Delaunay 
+from src.utils.geometry import improve_obtuse_angles
+from core.geometry_utils import isotropic
 '''
 角度优化：基于质心沃罗诺伊镶嵌（CVT）和非钝角重网格化（NOB）
 '''
@@ -10,11 +12,14 @@ def compute_triangle_angles(mesh):
     angles = []
     for face in mesh.faces:
         v0, v1, v2 = mesh.vertices[face]
+        
+        # 添加数值稳定性检查
         epsilon = 1e-8
         a = v1 - v0
         b = v2 - v0
         c = v2 - v1
-
+        
+        # 计算角度（添加安全除法）
         dot_bc = np.dot(b, c)
         norm_b = np.linalg.norm(b) + epsilon
         norm_c = np.linalg.norm(c) + epsilon
@@ -25,7 +30,9 @@ def compute_triangle_angles(mesh):
         norm_a = np.linalg.norm(a) + epsilon
         cos_b = np.clip(dot_ac / (norm_a * norm_c), -1.0, 1.0)
         angle_b = np.degrees(np.arccos(cos_b))
+
         angle_c = 180 - angle_a - angle_b
+        
         angles.append([angle_a, angle_b, angle_c])
     return np.array(angles) 
  
@@ -38,7 +45,7 @@ def compute_weighted_centroid(vertices, face):
     area = 0.5 * np.linalg.norm(np.cross(b - a, c - a))
     return centroid, area
 
-def cvt_optimization(mesh, iterations=5):
+def cvt_optimization(mesh, iterations=5, beta_min=35.0, beta_max=86.0):  # 添加新的参数
     """CVT 优化"""
     vertices = mesh.vertices.copy()
     faces = mesh.faces
@@ -66,30 +73,28 @@ def cvt_optimization(mesh, iterations=5):
     return optimized_mesh
 
 
-def nob_optimization(mesh, beta_min=35.0, beta_max=86.0):
+
+def nob_optimization(mesh, beta_min=35.0, beta_max=86.0, max_iter=10):
     """NOB"""
-    optimized = remesh.barycentric(mesh,  count=len(mesh.vertices)) 
-    angles = compute_triangle_angles(optimized)
-    while np.any(angles  > beta_max):
-        idx = np.where(angles  > beta_max)[0][0]
-        face = optimized.faces[idx] 
-        edge = optimized.edges_unique[idx] 
-        new_vertex = np.mean(optimized.vertices[edge],  axis=0)
-        optimized.vertices  = np.vstack([optimized.vertices,  new_vertex])
-        optimized = remesh.subdivide(optimized) 
-        
-        # 重新计算角度 
+    optimized = mesh.copy()
+    for i in range(max_iter):
         angles = compute_triangle_angles(optimized)
-    
-    return optimized 
+        if np.all((angles <= beta_max) & (angles >= beta_min)):
+            print(f"NOB优化在第{i}轮提前收敛")
+            break
+        optimized = improve_obtuse_angles(optimized, angle_threshold=beta_max)
+    return optimized
  
 def angle_optimization(input_path, output_path, method="cvt", beta_min=35.0, beta_max=86.0):
+    """主函数""" 
     mesh = trimesh.load(input_path) 
     
     if method == "cvt":
         optimized = cvt_optimization(mesh, beta_min=beta_min, beta_max=beta_max)
     elif method == "nob":
         optimized = nob_optimization(mesh, beta_min=beta_min, beta_max=beta_max)
+    elif method == "isotropic":
+        optimized = isotropic(mesh, beta_min=beta_min, beta_max=beta_max)
     else:
         raise ValueError("Unsupported method. Choose 'cvt' or 'nob'.")
     optimized.export(output_path) 
@@ -99,9 +104,13 @@ if __name__ == "__main__":
     input_path = "output/Botijo_to_5k_input_uniform.obj" 
     output_path_cvt = "output/optimized_cvt.obj" 
     output_path_nob = "output/optimized_nob.obj" 
+    output_path_isotropic = "output/optimized_isotropic.obj"
     
     # CVT 优化 
     angle_optimization(input_path, output_path_cvt, method="cvt", beta_min=35.0, beta_max=86.0)
     
     # NOB 优化 
     angle_optimization(input_path, output_path_nob, method="nob", beta_min=35.0, beta_max=86.0)
+
+    # isotropic 优化
+    angle_optimization(input_path,output_path_nob, method="isotropic", beta_min=35.0, beta_max=86.0)
